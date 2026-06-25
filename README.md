@@ -16,13 +16,13 @@ agent_ppo/conf       环境、奖励、模型、PPO 和 real 参数
 agent_ppo/feature    奖励处理与 real 环境封装
 agent_ppo/model      actor-critic 网络结构
 agent_ppo/algorithm  PPO 算法封装
-agent_ppo/workflow   环境创建、训练、评估、可视化流程
+agent_ppo/workflow   环境创建、训练、评估流程
 
 train_base.py        base 训练入口
 evaluate_base.py     base 测评入口
 train_real.py        real 训练入口
 evaluate_real.py     real 测评入口
-watch_agent.py       可视化入口
+dashboard.py         网页端训练、测评和可视化入口
 ```
 
 ## 安装
@@ -55,6 +55,40 @@ GPU 版安装完成后可以检查：
 python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
 ```
 
+## 网页端训练与测评
+
+项目以本地 Web Dashboard 作为唯一可视化界面，适合在浏览器中进行训练、测评、模型选择和测评回放。网页端不会改写 PPO 算法，仍然复用现有训练与测评流程。
+
+首次使用先构建前端：
+
+```powershell
+cd dashboard/frontend
+npm install
+npm run build
+cd ../..
+```
+
+启动网页端：
+
+```powershell
+python dashboard.py
+```
+
+浏览器打开：
+
+```text
+http://127.0.0.1:7860
+```
+
+网页端包含两个主界面：
+
+```text
+训练界面：选择 base/real、CPU/GPU、训练轮数、并行环境数，并查看训练曲线。
+测评界面：自动识别模型文件，选择 CPU/GPU、测评回合数、best_model.zip，并查看大屏测评回放和测评曲线。
+```
+
+启动训练或测评时，界面会确认当前环境和设备。开启测评后会自动播放对应模型的回放；切换到其他模型会中断当前回放。
+
 ## 任务说明
 
 智能体控制登月舱降落到两个旗帜之间的着陆区。
@@ -77,7 +111,11 @@ left_leg_contact, right_leg_contact
 
 base 测评中，一局累计回报 `episode_return >= 200` 记为达到 LunarLander 常用通过标准。
 
-## Base 环境
+## 命令行训练与测评
+
+命令行入口适合快速训练、批量实验和在终端中复现实验结果。`--device` 可选 `cpu`、`cuda` 或 `auto`；如果本机没有可用 CUDA，请使用 `cpu`。
+
+### Base 环境
 
 训练：
 
@@ -97,14 +135,7 @@ python evaluate_base.py --episodes 20 --device cpu
 python train_base.py --timesteps 256 --n-envs 1 --device cpu
 ```
 
-兼容旧入口：
-
-```powershell
-python train_test.py --device cpu
-python evaluate_agent.py --episodes 20 --device cpu
-```
-
-## Real 环境
+### Real 环境
 
 real 环境封装在：
 
@@ -165,28 +196,40 @@ completion_rate  完成率，满足落地接触、居中、姿态条件记为 1�
 agent_ppo/conf/conf.py
 ```
 
-## 可视化
+## 推荐开发流程
 
-查看 base 环境：
-
-```powershell
-python watch_agent.py --env-mode base
-```
-
-查看 real 环境：
+1. 激活环境并安装依赖：
 
 ```powershell
-python watch_agent.py --env-mode real
+conda activate rl-maze
+python -m pip install -r requirements.txt
 ```
 
-可视化界面左侧也提供 `Base` / `Real` 按钮，可以在运行时切换环境模式；切换后会加载对应模式的最新模型。
-
-无渲染运行：
+2. 做一次短训练验证：
 
 ```powershell
-python watch_agent.py --env-mode base --no-render --n-timesteps 5000
-python watch_agent.py --env-mode real --no-render --n-timesteps 5000
+python train_base.py --timesteps 256 --n-envs 1 --device cpu
 ```
+
+3. 构建并启动网页端，在浏览器中继续训练、测评和回放：
+
+```powershell
+cd dashboard/frontend
+npm install
+npm run build
+cd ../..
+python dashboard.py
+```
+
+4. 修改前端时使用开发服务器：
+
+```powershell
+python dashboard.py --no-browser
+cd dashboard/frontend
+npm run dev
+```
+
+5. 修改算法、奖励或 real 环境后，优先跑短训练，再用网页端测评回放检查行为是否符合预期。
 
 ## 二次开发入口
 

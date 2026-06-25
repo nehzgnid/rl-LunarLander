@@ -18,10 +18,5 @@ class Agent:
 
         workflow()
 
-    def watch(self, no_render=False, n_timesteps=None):
-        from agent_ppo.workflow.watch_workflow import workflow
-
-        workflow(no_render=no_render, n_timesteps=n_timesteps)
-
     def describe(self):
         return self.model_spec.describe()

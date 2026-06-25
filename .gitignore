@@ -48,3 +48,9 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+.dashboard/
+dashboard/frontend/node_modules/
+dashboard/frontend/dist/
+dashboard/frontend/tsconfig.tsbuildinfo
+dashboard-*-preview.png
+dashboard-preview.png
